@@ -52,16 +52,24 @@ module Griddler
 
       def extract_file_at(index)
         filename = attachment_filename(index)
-
+        content_id = attachment_content_id(index)
         params.delete("attachment#{index + 1}".to_sym).tap do |file|
           if filename.present?
             file.original_filename = filename
+          end
+
+          if content_id.present?
+            file.headers += "\r\nContent-ID: #{content_id}"
           end
         end
       end
 
       def attachment_filename(index)
         attachment_info.fetch("attachment#{index + 1}", {})["filename"]
+      end
+
+      def attachment_content_id(index)
+        attachment_info.fetch("attachment#{index + 1}", {})["content-id"]
       end
 
       def attachment_info
