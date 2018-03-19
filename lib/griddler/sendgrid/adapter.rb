@@ -59,7 +59,7 @@ module Griddler
           end
 
           if content_id.present?
-            file.headers += "\r\nContent-ID: #{content_id}"
+            file.headers += "\r\nContent-ID: \"#{content_id}\""
           end
         end
       end
