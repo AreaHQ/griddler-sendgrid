@@ -23,9 +23,15 @@ module Griddler
 
       attr_reader :params
 
+      # Sendgrid was sending us malformed emails, so if the first attempt fails 
+      # fallback to pulling out the raw email with regex.
       def recipients(key)
         encoded = Mail::Encodings.address_encode(params[key] || '')
         Mail::AddressList.new(encoded).addresses
+      rescue ArgumentError
+        []
+      rescue Mail::Field::IncompleteParseError
+        Mail::AddressList.new((params[key] || '').match(/\<(.*)\>/)&.captures&.first).addresses
       end
 
       def get_bcc
