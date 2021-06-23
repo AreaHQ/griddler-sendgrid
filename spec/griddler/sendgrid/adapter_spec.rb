@@ -14,6 +14,7 @@ describe Griddler::Sendgrid::Adapter, '.normalize_params' do
       to: 'Hello World <hi@example.com>',
       cc: 'emily@example.com',
       from: 'There <there@example.com>',
+      charsets: { to: 'UTF-8', text: 'iso-8859-1' }.to_json
     }
 
   it 'changes attachments to an array of files' do
@@ -129,6 +130,41 @@ describe Griddler::Sendgrid::Adapter, '.normalize_params' do
     normalized_params[:bcc].should eq []
   end
 
+  it 'returns the charsets as a hash' do
+    normalized_params = normalize_params(default_params)
+    charsets = normalized_params[:charsets]
+
+    charsets.should be_present
+    charsets[:text].should eq 'iso-8859-1'
+    charsets[:to].should eq 'UTF-8'
+  end
+
+  it 'does not explode if charsets is not JSON-able' do
+    params = default_params.merge(charsets: 'This is not JSON')
+
+    normalize_params(params)[:charsets].should eq({})
+  end
+
+  it 'does not explode if address is not parseable' do
+    params = default_params.merge(cc: '"Closing Bracket Missing For Some Reason" <hi@example.com')
+
+    normalize_params(params)[:cc].should eq([])
+  end
+
+  it 'defaults charsets to an empty hash if it is not specified in params' do
+    params = default_params.except(:charsets)
+    normalize_params(params)[:charsets].should eq({})
+  end
+
+  it 'normalizes the spam report into a griddler friendly format' do
+    normalized_params = normalize_params(default_params)
+
+    normalized_params[:spam_report].should eq({
+      score: '1.234',
+      report: 'Some spam report',
+    })
+  end
+
   def default_params
     {
       text: 'hi',
@@ -136,6 +172,9 @@ describe Griddler::Sendgrid::Adapter, '.normalize_params' do
       cc: 'cc@example.com',
       from: 'there@example.com',
       envelope: "{\"to\":[\"johny@example.com\"], \"from\": [\"there@example.com\"]}",
+      charsets: { to: 'UTF-8', text: 'iso-8859-1' }.to_json,
+      spam_score: '1.234',
+      spam_report: 'Some spam report'
     }
   end
 end
